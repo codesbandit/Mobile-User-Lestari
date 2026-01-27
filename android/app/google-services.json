@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "825010792860",
+    "project_id": "id-lestari-project",
+    "storage_bucket": "id-lestari-project.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:825010792860:android:37f7e6b2eec050412d0059",
+        "android_client_info": {
+          "package_name": "id.lestari.kurir"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBCYEiAddYw8VXhfjyhicxO3Qi0jYOuJnM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:825010792860:android:cd34e7bec40dee552d0059",
+        "android_client_info": {
+          "package_name": "id.lestari.toko"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBCYEiAddYw8VXhfjyhicxO3Qi0jYOuJnM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:825010792860:android:e990b667b0e7b9972d0059",
+        "android_client_info": {
+          "package_name": "id.lestari.user"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBCYEiAddYw8VXhfjyhicxO3Qi0jYOuJnM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

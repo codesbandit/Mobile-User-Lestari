@@ -1,0 +1,189 @@
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:lestar_user/common/widgets/custom_button_widget.dart';
+import 'package:lestar_user/common/widgets/custom_snackbar_widget.dart';
+import 'package:lestar_user/features/cart/controllers/cart_controller.dart';
+import 'package:lestar_user/features/coupon/controllers/coupon_controller.dart';
+import 'package:lestar_user/features/restaurant/controllers/restaurant_controller.dart';
+import 'package:lestar_user/features/splash/controllers/splash_controller.dart';
+import 'package:lestar_user/helper/price_converter.dart';
+import 'package:lestar_user/helper/responsive_helper.dart';
+import 'package:lestar_user/helper/route_helper.dart';
+import 'package:lestar_user/util/dimensions.dart';
+import 'package:lestar_user/util/images.dart';
+import 'package:lestar_user/util/styles.dart';
+
+class CheckoutButtonWidget extends StatelessWidget {
+  final CartController cartController;
+  final List<bool> availableList;
+  final bool isRestaurantOpen;
+  final bool fromDineIn;
+  const CheckoutButtonWidget({
+    super.key,
+    required this.cartController,
+    required this.availableList,
+    required this.isRestaurantOpen,
+    this.fromDineIn = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    double percentage = 0;
+    bool isDesktop = ResponsiveHelper.isDesktop(context);
+
+    return Container(
+      width: Dimensions.webMaxWidth,
+      padding: const EdgeInsets.symmetric(
+        vertical: Dimensions.paddingSizeSmall,
+        horizontal: Dimensions.paddingSizeDefault,
+      ),
+      decoration: isDesktop
+          ? null
+          : BoxDecoration(color: Theme.of(context).cardColor),
+      child: SafeArea(
+        child: GetBuilder<RestaurantController>(
+          builder: (restaurantController) {
+            if (Get.find<RestaurantController>().restaurant != null &&
+                Get.find<RestaurantController>().restaurant!.freeDelivery !=
+                    null &&
+                !Get.find<RestaurantController>().restaurant!.freeDelivery! &&
+                Get.find<SplashController>().configModel!.freeDeliveryOver !=
+                    null) {
+              percentage =
+                  cartController.subTotal /
+                  Get.find<SplashController>().configModel!.freeDeliveryOver!;
+            }
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                (restaurantController.restaurant != null &&
+                        restaurantController.restaurant!.freeDelivery != null &&
+                        !restaurantController.restaurant!.freeDelivery! &&
+                        Get.find<SplashController>()
+                                .configModel!
+                                .freeDeliveryOver !=
+                            null &&
+                        percentage < 1)
+                    ? Padding(
+                        padding: EdgeInsets.only(
+                          bottom: isDesktop ? Dimensions.paddingSizeLarge : 0,
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                Image.asset(
+                                  Images.percentTag,
+                                  height: 20,
+                                  width: 20,
+                                ),
+                                const SizedBox(
+                                  width: Dimensions.paddingSizeExtraSmall,
+                                ),
+
+                                PriceConverter.convertAnimationPrice(
+                                  Get.find<SplashController>()
+                                          .configModel!
+                                          .freeDeliveryOver! -
+                                      cartController.subTotal,
+                                  textStyle: robotoMedium.copyWith(
+                                    color: Theme.of(context).primaryColor,
+                                  ),
+                                ),
+                                const SizedBox(
+                                  width: Dimensions.paddingSizeExtraSmall,
+                                ),
+
+                                Text(
+                                  'more_for_free_delivery'.tr,
+                                  style: robotoMedium.copyWith(
+                                    color: Theme.of(context).disabledColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(
+                              height: Dimensions.paddingSizeExtraSmall,
+                            ),
+
+                            LinearProgressIndicator(
+                              backgroundColor: Theme.of(
+                                context,
+                              ).primaryColor.withValues(alpha: 0.2),
+                              value: percentage,
+                            ),
+                          ],
+                        ),
+                      )
+                    : const SizedBox(),
+
+                !isDesktop
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: Dimensions.paddingSizeSmall,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'subtotal'.tr,
+                              style: robotoMedium.copyWith(
+                                color: Theme.of(context).primaryColor,
+                              ),
+                            ),
+                            PriceConverter.convertAnimationPrice(
+                              cartController.subTotal,
+                              textStyle: robotoRegular.copyWith(
+                                color: Theme.of(context).primaryColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : const SizedBox(),
+
+                GetBuilder<CartController>(
+                  builder: (cartController) {
+                    return CustomButtonWidget(
+                      radius: 10,
+                      buttonText: 'confirm_delivery_details'.tr,
+                      onPressed:
+                          cartController.isLoading ||
+                              restaurantController.restaurant == null
+                          ? null
+                          : () {
+                              _processToCheckoutButtonPressed(
+                                restaurantController,
+                              );
+                            },
+                    );
+                  },
+                ),
+                SizedBox(
+                  height: isDesktop ? Dimensions.paddingSizeExtraLarge : 0,
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  void _processToCheckoutButtonPressed(
+    RestaurantController restaurantController,
+  ) {
+    if (!cartController.cartList.first.product!.scheduleOrder! &&
+        cartController.availableList.contains(false)) {
+      showCustomSnackBar('one_or_more_product_unavailable'.tr);
+    } else if (restaurantController.restaurant!.freeDelivery == null ||
+        restaurantController.restaurant!.cutlery == null) {
+      showCustomSnackBar('restaurant_is_unavailable'.tr);
+    } /* else if(!isRestaurantOpen) {
+      showCustomSnackBar('restaurant_is_close_now'.tr);
+    } */ else {
+      Get.find<CouponController>().removeCouponData(false);
+      Get.toNamed(RouteHelper.getCheckoutRoute('cart', fromDineIn: fromDineIn));
+    }
+  }
+}
