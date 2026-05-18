@@ -9,19 +9,24 @@ import 'package:lestar_user/util/app_constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:universal_html/html.dart' as html;
 
-class WalletRepository implements WalletRepositoryInterface{
+class WalletRepository implements WalletRepositoryInterface {
   final ApiClient apiClient;
   final SharedPreferences sharedPreferences;
-  WalletRepository( {required this.apiClient, required this.sharedPreferences});
+  WalletRepository({required this.apiClient, required this.sharedPreferences});
 
   @override
   Future<WalletModel?> getList({int? offset, String? sortingType}) async {
     return await _getWalletTransactionList(offset!, sortingType!);
   }
 
-  Future<WalletModel?> _getWalletTransactionList(int offset, String sortingType) async {
+  Future<WalletModel?> _getWalletTransactionList(
+    int offset,
+    String sortingType,
+  ) async {
     WalletModel? walletModel;
-    Response response = await apiClient.getData('${AppConstants.walletTransactionUri}?offset=$offset&limit=10&type=$sortingType');
+    Response response = await apiClient.getData(
+      '${AppConstants.walletTransactionUri}?offset=$offset&limit=10&type=$sortingType',
+    );
     if (response.statusCode == 200) {
       walletModel = WalletModel.fromJson(response.body);
     }
@@ -30,17 +35,14 @@ class WalletRepository implements WalletRepositoryInterface{
 
   @override
   Future<Response> addFundToWallet(double amount, String paymentMethod) async {
-    String? hostname = html.window.location.hostname;
-    String protocol = html.window.location.protocol;
+    String webOrigin = html.window.location.origin ?? '';
 
-    return await apiClient.postData(AppConstants.addFundUri,
-        {
-          "amount": amount,
-          "payment_method": paymentMethod,
-          "payment_platform": GetPlatform.isWeb ? 'web' : '',
-          "callback": '$protocol//$hostname${RouteHelper.wallet}',
-        }
-    );
+    return await apiClient.postData(AppConstants.addFundUri, {
+      "amount": amount,
+      "payment_method": paymentMethod,
+      "payment_platform": GetPlatform.isWeb ? 'web' : '',
+      "callback": '$webOrigin${RouteHelper.wallet}',
+    });
   }
 
   @override
@@ -49,7 +51,7 @@ class WalletRepository implements WalletRepositoryInterface{
     Response response = await apiClient.getData(AppConstants.walletBonusUri);
     if (response.statusCode == 200) {
       fundBonusList = [];
-      response.body.forEach((value){
+      response.body.forEach((value) {
         fundBonusList!.add(FundBonusModel.fromJson(value));
       });
     }
@@ -62,7 +64,7 @@ class WalletRepository implements WalletRepositoryInterface{
   }
 
   @override
-  String getWalletAccessToken(){
+  String getWalletAccessToken() {
     return sharedPreferences.getString(AppConstants.walletAccessToken) ?? "";
   }
 
@@ -85,5 +87,4 @@ class WalletRepository implements WalletRepositoryInterface{
   Future update(Map<String, dynamic> body, int? id) {
     throw UnimplementedError();
   }
-
 }

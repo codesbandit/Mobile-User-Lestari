@@ -329,4 +329,19 @@ class CheckoutService implements CheckoutServiceInterface {
       data: data,
     );
   }
+
+  @override
+  Future<Response> getPaylabsPaymentMethods() async {
+    return await checkoutRepositoryInterface.getPaylabsPaymentMethods();
+  }
+
+  @override
+  Future<Response> createPaylabsPayment(Map<String, dynamic> body) async {
+    return await checkoutRepositoryInterface.createPaylabsPayment(body);
+  }
+
+  @override
+  Future<Response> checkPaylabsStatus(String paymentId) async {
+    return await checkoutRepositoryInterface.checkPaylabsStatus(paymentId);
+  }
 }

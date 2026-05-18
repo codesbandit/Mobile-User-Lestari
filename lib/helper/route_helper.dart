@@ -29,6 +29,7 @@ import 'package:lestar_user/features/checkout/domain/models/pricing_view_model.d
 import 'package:lestar_user/features/checkout/screens/checkout_screen.dart';
 import 'package:lestar_user/features/checkout/screens/offline_payment_screen.dart';
 import 'package:lestar_user/features/checkout/screens/order_successful_screen.dart';
+import 'package:lestar_user/features/checkout/screens/paylabs_payment_instruction_screen.dart';
 import 'package:lestar_user/features/checkout/screens/payment_screen.dart';
 import 'package:lestar_user/features/checkout/screens/payment_webview_screen.dart';
 import 'package:lestar_user/features/coupon/screens/coupon_screen.dart';
@@ -146,6 +147,7 @@ class RouteHelper {
   static const String favourite = '/favourite-screen';
   static const String newUserSetupScreen = '/new-user-setup-screen';
   static const String dineInRestaurant = '/dine-in-restaurant';
+  static const String paylabsInstruction = '/paylabs-instruction';
 
   static String getInitialRoute({bool fromSplash = false}) =>
       '$initial?from-splash=$fromSplash';
@@ -428,6 +430,19 @@ class RouteHelper {
   }
 
   static String getDineInRestaurantScreen() => dineInRestaurant;
+  static String getPaylabsInstructionRoute({
+    required String paymentId,
+    required String paymentType,
+    required String category,
+    required String instruction,
+    required double orderAmount,
+    required String orderId,
+    required String contactNumber,
+    required bool isDeliveryOrder,
+  }) {
+    String encodedInstruction = base64Encode(utf8.encode(instruction));
+    return '$paylabsInstruction?payment_id=$paymentId&payment_type=$paymentType&category=$category&instruction=$encodedInstruction&amount=$orderAmount&order_id=$orderId&contact=$contactNumber&is_delivery=$isDeliveryOrder';
+  }
 
   static List<GetPage> routes = [
     GetPage(
@@ -1129,6 +1144,23 @@ class RouteHelper {
     GetPage(
       name: dineInRestaurant,
       page: () => getRoute(const DineInRestaurantScreen()),
+    ),
+    GetPage(
+      name: paylabsInstruction,
+      page: () {
+        return getRoute(
+          PaylabsPaymentInstructionScreen(
+            paymentId: Get.parameters['payment_id'] ?? '',
+            paymentType: Get.parameters['payment_type'] ?? '',
+            category: Get.parameters['category'] ?? '',
+            instruction: Get.parameters['instruction'] ?? '',
+            orderAmount: double.tryParse(Get.parameters['amount'] ?? '0') ?? 0,
+            orderId: Get.parameters['order_id'] ?? '',
+            contactNumber: Get.parameters['contact'] ?? '',
+            isDeliveryOrder: Get.parameters['is_delivery'] == 'true',
+          ),
+        );
+      },
     ),
   ];
 

@@ -56,6 +56,7 @@ class ApiClient extends GetxService {
     Map<String, String> header = {};
     header.addAll({
       'Content-Type': 'application/json; charset=UTF-8',
+      'Accept': 'application/json',
       AppConstants.zoneId: zoneIDs != null ? jsonEncode(zoneIDs) : '',
       AppConstants.localizationKey:
           languageCode ?? AppConstants.languages[0].languageCode!,

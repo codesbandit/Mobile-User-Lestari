@@ -112,6 +112,23 @@ class CheckoutRepository implements CheckoutRepositoryInterface {
   }
 
   @override
+  Future<Response> getPaylabsPaymentMethods() async {
+    return await apiClient.getData(AppConstants.paylabsPaymentMethodsUri);
+  }
+
+  @override
+  Future<Response> createPaylabsPayment(Map<String, dynamic> body) async {
+    return await apiClient.postData(AppConstants.paylabsCreatePaymentUri, body);
+  }
+
+  @override
+  Future<Response> checkPaylabsStatus(String paymentId) async {
+    return await apiClient.getData(
+      '${AppConstants.paylabsCheckStatusUri}?payment_id=$paymentId',
+    );
+  }
+
+  @override
   Future add(value) {
     throw UnimplementedError();
   }

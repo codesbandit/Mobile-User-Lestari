@@ -39,4 +39,7 @@ abstract class CheckoutServiceInterface {
   });
   Future<bool> updateOfflineInfo(String data);
   Future<bool> checkRestaurantValidation({required Map<String, dynamic> data});
+  Future<Response> getPaylabsPaymentMethods();
+  Future<Response> createPaylabsPayment(Map<String, dynamic> body);
+  Future<Response> checkPaylabsStatus(String paymentId);
 }

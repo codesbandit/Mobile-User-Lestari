@@ -12,22 +12,31 @@ import 'package:get/get.dart';
 import 'business_service_interface.dart';
 import 'package:universal_html/html.dart' as html;
 
-class BusinessService implements BusinessServiceInterface{
+class BusinessService implements BusinessServiceInterface {
   final BusinessRepoInterface businessRepoInterface;
   BusinessService({required this.businessRepoInterface});
 
   @override
-  Future<String> processesBusinessPlan(String businessPlanStatus, int paymentIndex, int restaurantId, String? digitalPaymentName, int? selectedPackageId) async {
-  
+  Future<String> processesBusinessPlan(
+    String businessPlanStatus,
+    int paymentIndex,
+    int restaurantId,
+    String? digitalPaymentName,
+    int? selectedPackageId,
+  ) async {
     String businessPlan = 'subscription';
     int? packageId = selectedPackageId;
     String? payment = paymentIndex == 0 ? 'free_trial' : digitalPaymentName;
-    String? hostname = html.window.location.hostname;
-    String protocol = html.window.location.protocol;
+    String webOrigin = html.window.location.origin ?? '';
 
-    if(paymentIndex == 1 && digitalPaymentName == null) {
-      if(ResponsiveHelper.isDesktop(Get.context)) {
-        Get.dialog(const Dialog(backgroundColor: Colors.transparent, child: BusinessPaymentMethodBottomSheetWidget()));
+    if (paymentIndex == 1 && digitalPaymentName == null) {
+      if (ResponsiveHelper.isDesktop(Get.context)) {
+        Get.dialog(
+          const Dialog(
+            backgroundColor: Colors.transparent,
+            child: BusinessPaymentMethodBottomSheetWidget(),
+          ),
+        );
       } else {
         showCustomSnackBar('please_select_payment_method'.tr);
       }
@@ -39,38 +48,82 @@ class BusinessService implements BusinessServiceInterface{
           restaurantId: restaurantId.toString(),
           payment: payment,
           paymentGateway: payment,
-          callBack: paymentIndex == 0 ? '' : ResponsiveHelper.isDesktop(Get.context) ? '$protocol//$hostname${RouteHelper.subscriptionSuccess}' : RouteHelper.subscriptionSuccess,
+          callBack: paymentIndex == 0
+              ? ''
+              : ResponsiveHelper.isDesktop(Get.context)
+              ? '$webOrigin${RouteHelper.subscriptionSuccess}'
+              : RouteHelper.subscriptionSuccess,
           paymentPlatform: GetPlatform.isWeb ? 'web' : 'app',
           type: 'new_join',
         ),
-        digitalPaymentName, businessPlanStatus, restaurantId, packageId,
+        digitalPaymentName,
+        businessPlanStatus,
+        restaurantId,
+        packageId,
       );
     }
     return businessPlanStatus;
   }
 
   @override
-  Future<String> setUpBusinessPlan(BusinessPlanBody businessPlanBody, String? digitalPaymentName, String businessPlanStatus, int restaurantId, int? packageId) async {
-    Response response = await businessRepoInterface.setUpBusinessPlan(businessPlanBody);
+  Future<String> setUpBusinessPlan(
+    BusinessPlanBody businessPlanBody,
+    String? digitalPaymentName,
+    String businessPlanStatus,
+    int restaurantId,
+    int? packageId,
+  ) async {
+    Response response = await businessRepoInterface.setUpBusinessPlan(
+      businessPlanBody,
+    );
     if (response.statusCode == 200) {
-      if(response.body['redirect_link'] != null) {
-        _subscriptionPayment(response.body['redirect_link'], digitalPaymentName, restaurantId, packageId);
+      if (response.body['redirect_link'] != null) {
+        _subscriptionPayment(
+          response.body['redirect_link'],
+          digitalPaymentName,
+          restaurantId,
+          packageId,
+        );
       } else {
         businessPlanStatus = 'complete';
-        Get.find<DashboardController>().saveRegistrationSuccessfulSharedPref(true);
-        Get.find<DashboardController>().saveIsRestaurantRegistrationSharedPref(true);
-        Get.offAllNamed(RouteHelper.getSubscriptionSuccessRoute(status: 'success', fromSubscription: true, restaurantId: restaurantId, packageId: packageId));
+        Get.find<DashboardController>().saveRegistrationSuccessfulSharedPref(
+          true,
+        );
+        Get.find<DashboardController>().saveIsRestaurantRegistrationSharedPref(
+          true,
+        );
+        Get.offAllNamed(
+          RouteHelper.getSubscriptionSuccessRoute(
+            status: 'success',
+            fromSubscription: true,
+            restaurantId: restaurantId,
+            packageId: packageId,
+          ),
+        );
       }
     }
     return businessPlanStatus;
   }
 
-  Future<void> _subscriptionPayment(String redirectUrl, String? digitalPaymentName, int restaurantId, int? packageId) async {
-    if(GetPlatform.isWeb) {
-      html.window.open(redirectUrl,"_self");
-    } else{
-      Get.toNamed(RouteHelper.getPaymentRoute(OrderModel(), digitalPaymentName, subscriptionUrl: redirectUrl, guestId: Get.find<AuthController>().getGuestId(), restaurantId: restaurantId, packageId: packageId));
+  Future<void> _subscriptionPayment(
+    String redirectUrl,
+    String? digitalPaymentName,
+    int restaurantId,
+    int? packageId,
+  ) async {
+    if (GetPlatform.isWeb) {
+      html.window.open(redirectUrl, "_self");
+    } else {
+      Get.toNamed(
+        RouteHelper.getPaymentRoute(
+          OrderModel(),
+          digitalPaymentName,
+          subscriptionUrl: redirectUrl,
+          guestId: Get.find<AuthController>().getGuestId(),
+          restaurantId: restaurantId,
+          packageId: packageId,
+        ),
+      );
     }
   }
-
 }

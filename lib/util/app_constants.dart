@@ -151,6 +151,11 @@ class AppConstants {
   static const String dineInRestaurantListUri = '/api/v1/restaurants/dine-in';
   static const String checkRestaurantValidation =
       '/api/v1/customer/order/check-restaurant-validation';
+  static const String paylabsPaymentMethodsUri =
+      '/api/v1/paylabs/payment-methods';
+  static const String paylabsCreatePaymentUri =
+      '/api/v1/paylabs/create-payment';
+  static const String paylabsCheckStatusUri = '/api/v1/paylabs/check-status';
 
   ///Subscription
   static const String businessPlanUri = '/api/v1/vendor/business_plan';

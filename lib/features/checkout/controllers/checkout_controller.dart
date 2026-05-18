@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +14,7 @@ import 'package:lestar_user/features/address/widgets/address_card_widget.dart';
 import 'package:lestar_user/features/auth/controllers/auth_controller.dart';
 import 'package:lestar_user/features/cart/controllers/cart_controller.dart';
 import 'package:lestar_user/features/checkout/domain/models/offline_method_model.dart';
+import 'package:lestar_user/features/checkout/domain/models/paylabs_payment_method_model.dart';
 import 'package:lestar_user/features/checkout/domain/models/place_order_body_model.dart';
 import 'package:lestar_user/features/checkout/domain/models/timeslote_model.dart';
 import 'package:lestar_user/features/checkout/domain/services/checkout_service_interface.dart';
@@ -152,6 +155,13 @@ class CheckoutController extends GetxController implements GetxService {
   String? _digitalPaymentName;
   String? get digitalPaymentName => _digitalPaymentName;
 
+  List<PaylabsPaymentMethodModel>? _paylabsPaymentMethods;
+  List<PaylabsPaymentMethodModel>? get paylabsPaymentMethods =>
+      _paylabsPaymentMethods;
+
+  String? _paylabsSelectedPaymentType;
+  String? get paylabsSelectedPaymentType => _paylabsSelectedPaymentType;
+
   String? countryDialCode =
       Get.find<AuthController>().getUserCountryCode().isNotEmpty
       ? Get.find<AuthController>().getUserCountryCode()
@@ -252,6 +262,134 @@ class CheckoutController extends GetxController implements GetxService {
   void changeDigitalPaymentName(String name) {
     _digitalPaymentName = name;
     update();
+  }
+
+  void selectPaylabsPaymentType(String? paymentType) {
+    _paylabsSelectedPaymentType = paymentType;
+    update();
+  }
+
+  Future<void> fetchPaylabsPaymentMethods() async {
+    Response response = await checkoutServiceInterface
+        .getPaylabsPaymentMethods();
+    if (response.statusCode == 200 && response.body['status'] == true) {
+      _paylabsPaymentMethods = [];
+      for (final dynamic item in response.body['data']) {
+        _paylabsPaymentMethods!.add(
+          PaylabsPaymentMethodModel.fromJson(Map<String, dynamic>.from(item)),
+        );
+      }
+    }
+    update();
+  }
+
+  Future<Map<String, dynamic>> createPaylabsPayment(
+    String orderId,
+    String paymentType,
+  ) async {
+    try {
+      Response response = await checkoutServiceInterface.createPaylabsPayment({
+        'order_id': orderId,
+        'payment_type': paymentType,
+      });
+      final Map<String, dynamic>? body = response.body is Map
+          ? Map<String, dynamic>.from(response.body)
+          : null;
+
+      if (response.statusCode == 200 && body?['ok'] == true) {
+        return body!;
+      }
+
+      final int statusCode = response.statusCode ?? 0;
+      final bool retryable =
+          body?['retryable'] == true ||
+          statusCode == 0 ||
+          statusCode == 1 ||
+          statusCode == 503;
+
+      return {
+        'ok': false,
+        'message': _buildPaylabsErrorMessage(response, body),
+        'error_code': body?['error_code']?.toString(),
+        'retryable': retryable,
+      };
+    } catch (_) {
+      return {
+        'ok': false,
+        'message': 'Terjadi kesalahan koneksi.',
+        'error_code': 'CLIENT_EXCEPTION',
+        'retryable': true,
+      };
+    }
+  }
+
+  Future<String> checkPaylabsStatus(String paymentId) async {
+    try {
+      Response response = await checkoutServiceInterface.checkPaylabsStatus(
+        paymentId,
+      );
+      final dynamic body = response.body;
+      if (response.statusCode == 200 && body is Map && body['ok'] == true) {
+        return (body['status'] ?? 'pending').toString();
+      }
+    } catch (_) {}
+    return 'pending';
+  }
+
+  String _buildPaylabsErrorMessage(
+    Response response,
+    Map<String, dynamic>? body,
+  ) {
+    final dynamic apiMessage = body?['message'];
+    if (apiMessage is String && apiMessage.trim().isNotEmpty) {
+      return apiMessage.trim();
+    }
+
+    final int statusCode = response.statusCode ?? 0;
+    final String statusText = (response.statusText ?? '').trim();
+    final String bodyString = (response.bodyString ?? '').trim();
+    final String bodyFallback = bodyString.isNotEmpty
+        ? bodyString.length > 180
+              ? '${bodyString.substring(0, 180)}...'
+              : bodyString
+        : '';
+
+    final List<String> parts = ['Gagal membuat pembayaran'];
+    if (statusCode > 0) {
+      parts.add(
+        '(HTTP $statusCode${statusText.isNotEmpty ? ' $statusText' : ''})',
+      );
+    } else if (statusText.isNotEmpty) {
+      parts.add('($statusText)');
+    }
+
+    if (bodyFallback.isNotEmpty) {
+      parts.add(': $bodyFallback');
+    }
+
+    return parts.join(' ');
+  }
+
+  Future<bool> _showPaylabsRetryDialog(String message) async {
+    final bool? shouldRetry = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Pembayaran sedang gangguan'),
+        content: Text('$message\n\nCoba ulang pembayaran sekarang?'),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Nanti'),
+          ),
+          ElevatedButton(
+            onPressed: () => Get.back(result: true),
+            child: const Text('Coba Lagi'),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+
+    return shouldRetry == true;
   }
 
   void _setGuestAddress(AddressModel? address) {
@@ -872,28 +1010,103 @@ class CheckoutController extends GetxController implements GetxService {
           );
         }
       } else {
-        if (GetPlatform.isWeb) {
+        if (GetPlatform.isWeb && digitalPaymentName != 'paylabs') {
           await Get.find<AuthController>().saveGuestNumber(contactNumber ?? '');
-          String? hostname = html.window.location.hostname;
-          String protocol = html.window.location.protocol;
+          String webOrigin = html.window.location.origin ?? '';
           String selectedUrl =
               '${AppConstants.baseUrl}/payment-mobile?order_id=$orderID&customer_id=${Get.find<ProfileController>().userInfoModel?.id ?? Get.find<AuthController>().getGuestId()}'
-              '&payment_method=$digitalPaymentName&payment_platform=web&&callback=$protocol//$hostname${RouteHelper.orderSuccess}?id=$orderID&amount=$amount&status=';
+              '&payment_method=$digitalPaymentName&payment_platform=web&&callback=$webOrigin${RouteHelper.orderSuccess}?id=$orderID&amount=$amount&status=';
           html.window.open(selectedUrl, "_self");
-        } else {
-          Get.offNamed(
-            RouteHelper.getPaymentRoute(
-              OrderModel(
-                id: int.parse(orderID),
-                userId: Get.find<ProfileController>().userInfoModel?.id ?? 0,
-                orderAmount: amount,
-                restaurant: Get.find<RestaurantController>().restaurant,
-              ),
-              digitalPaymentName,
-              guestId: Get.find<AuthController>().getGuestId(),
-              contactNumber: contactNumber,
-            ),
+        } else if (digitalPaymentName == 'paylabs' &&
+            paylabsSelectedPaymentType != null) {
+          Map<String, dynamic> result = await createPaylabsPayment(
+            orderID,
+            paylabsSelectedPaymentType!,
           );
+          if (result['ok'] == true) {
+            Get.offNamed(
+              RouteHelper.getPaylabsInstructionRoute(
+                paymentId: result['payment_id'].toString(),
+                paymentType: result['payment_type'].toString(),
+                category: result['category'].toString(),
+                instruction: jsonEncode(result['instruction']),
+                orderAmount: amount,
+                orderId: orderID,
+                contactNumber: contactNumber ?? '',
+                isDeliveryOrder: isDeliveryOrder,
+              ),
+            );
+          } else {
+            final bool retryable = result['retryable'] == true;
+            final String errorMessage =
+                (result['message'] ?? 'Gagal membuat pembayaran.').toString();
+
+            if (retryable) {
+              final bool shouldRetry = await _showPaylabsRetryDialog(
+                errorMessage,
+              );
+              if (shouldRetry) {
+                result = await createPaylabsPayment(
+                  orderID,
+                  paylabsSelectedPaymentType!,
+                );
+                if (result['ok'] == true) {
+                  Get.offNamed(
+                    RouteHelper.getPaylabsInstructionRoute(
+                      paymentId: result['payment_id'].toString(),
+                      paymentType: result['payment_type'].toString(),
+                      category: result['category'].toString(),
+                      instruction: jsonEncode(result['instruction']),
+                      orderAmount: amount,
+                      orderId: orderID,
+                      contactNumber: contactNumber ?? '',
+                      isDeliveryOrder: isDeliveryOrder,
+                    ),
+                  );
+                  clearPrevData();
+                  updateTips(0);
+                  Get.find<CouponController>().removeCouponData(false);
+                  return;
+                }
+              }
+            }
+
+            showCustomSnackBar(errorMessage);
+            Get.offNamed(
+              RouteHelper.getOrderSuccessRoute(
+                orderID,
+                'fail',
+                amount,
+                contactNumber,
+                isDeliveryOrder: isDeliveryOrder,
+              ),
+            );
+          }
+        } else {
+          if (GetPlatform.isWeb) {
+            await Get.find<AuthController>().saveGuestNumber(
+              contactNumber ?? '',
+            );
+            String webOrigin = html.window.location.origin ?? '';
+            String selectedUrl =
+                '${AppConstants.baseUrl}/payment-mobile?order_id=$orderID&customer_id=${Get.find<ProfileController>().userInfoModel?.id ?? Get.find<AuthController>().getGuestId()}'
+                '&payment_method=$digitalPaymentName&payment_platform=web&&callback=$webOrigin${RouteHelper.orderSuccess}?id=$orderID&amount=$amount&status=';
+            html.window.open(selectedUrl, "_self");
+          } else {
+            Get.offNamed(
+              RouteHelper.getPaymentRoute(
+                OrderModel(
+                  id: int.parse(orderID),
+                  userId: Get.find<ProfileController>().userInfoModel?.id ?? 0,
+                  orderAmount: amount,
+                  restaurant: Get.find<RestaurantController>().restaurant,
+                ),
+                digitalPaymentName,
+                guestId: Get.find<AuthController>().getGuestId(),
+                contactNumber: contactNumber,
+              ),
+            );
+          }
         }
       }
       clearPrevData();
@@ -915,6 +1128,7 @@ class CheckoutController extends GetxController implements GetxService {
     _subscriptionType = 'daily';
     _subscriptionRange = null;
     _isDmTipSave = false;
+    _paylabsSelectedPaymentType = null;
   }
 
   void toggleDmTipSave() {

@@ -23,9 +23,8 @@ class BusinessRepo implements BusinessRepoInterface<dynamic> {
   Future<Response> subscriptionPayment(String id, String? paymentName) async {
     String callback = '';
     if (GetPlatform.isWeb) {
-      String? hostname = html.window.location.hostname;
-      String protocol = html.window.location.protocol;
-      callback = '$protocol//$hostname${RouteHelper.subscriptionSuccess}';
+      String webOrigin = html.window.location.origin ?? '';
+      callback = '$webOrigin${RouteHelper.subscriptionSuccess}';
     }
 
     return await apiClient.postData(AppConstants.businessPlanPaymentUri, {
