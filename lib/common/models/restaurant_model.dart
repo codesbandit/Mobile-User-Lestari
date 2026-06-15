@@ -571,6 +571,7 @@ class Foods {
   int? recommended;
   String? slug;
   int? maximumCartQuantity;
+  int? weightGrams;
   List<Translations>? translations;
 
   Foods({
@@ -603,6 +604,7 @@ class Foods {
     this.recommended,
     this.slug,
     this.maximumCartQuantity,
+    this.weightGrams,
     this.translations,
   });
 
@@ -636,6 +638,9 @@ class Foods {
     recommended = json['recommended'];
     slug = json['slug'];
     maximumCartQuantity = json['maximum_cart_quantity'];
+    weightGrams = json['weight_grams'] != null
+        ? int.tryParse(json['weight_grams'].toString())
+        : null;
     if (json['translations'] != null) {
       translations = <Translations>[];
       json['translations'].forEach((v) {
@@ -675,6 +680,7 @@ class Foods {
     data['recommended'] = recommended;
     data['slug'] = slug;
     data['maximum_cart_quantity'] = maximumCartQuantity;
+    data['weight_grams'] = weightGrams;
     if (translations != null) {
       data['translations'] = translations!.map((v) => v.toJson()).toList();
     }

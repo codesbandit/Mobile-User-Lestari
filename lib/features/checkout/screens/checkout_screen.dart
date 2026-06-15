@@ -926,6 +926,62 @@ class CheckoutScreenState extends State<CheckoutScreen> {
   }) {
     ZoneData zoneData = AddressHelper.getAddressFromSharedPref()!.zoneData!
         .firstWhere((data) => data.id == restaurant!.zoneId);
+
+    if (zoneData.deliveryChargeType == 'weight') {
+      final int basisKg = zoneData.weightChargeBasis == 1000 ? 1000 : 1;
+      final double minimumCharge = zoneData.minimumShippingCharge ?? 0;
+      final double? maximumCharge = zoneData.maximumShippingCharge;
+      final double weightRate = zoneData.weightShippingCharge ?? 0;
+      final int totalWeightGrams = Get.find<CartController>().getTotalWeightGrams(
+        _cartList,
+      );
+      final double totalWeightKg = totalWeightGrams / 1000;
+      final double chargeBlocks = totalWeightKg > 0
+          ? (totalWeightKg / basisKg).ceilToDouble()
+          : 0;
+
+      double deliveryCharge = chargeBlocks * weightRate;
+      double charge = deliveryCharge;
+
+      if (deliveryCharge < minimumCharge) {
+        deliveryCharge = minimumCharge;
+        charge = minimumCharge;
+      }
+
+      if (maximumCharge != null && deliveryCharge > maximumCharge) {
+        deliveryCharge = maximumCharge;
+        charge = maximumCharge;
+      }
+
+      if (zoneData.increasedDeliveryFeeStatus == 1) {
+        badWeatherChargeForToolTip =
+            deliveryCharge * ((zoneData.increasedDeliveryFee ?? 0) / 100);
+        deliveryCharge =
+            deliveryCharge +
+            (deliveryCharge * ((zoneData.increasedDeliveryFee ?? 0) / 100));
+        charge = charge + (charge * ((zoneData.increasedDeliveryFee ?? 0) / 100));
+      }
+
+      if (Get.find<SplashController>().configModel!.freeDeliveryDistance !=
+              null &&
+          Get.find<SplashController>().configModel!.freeDeliveryDistance! >=
+              checkoutController.distance!) {
+        deliveryCharge = 0;
+        charge = 0;
+      }
+
+      if (restaurant.freeDelivery == true) {
+        deliveryCharge = 0;
+        charge = 0;
+      }
+
+      if (returnMaxCodOrderAmount) {
+        return zoneData.maxCodOrderAmount;
+      }
+
+      return returnDeliveryCharge ? deliveryCharge : charge;
+    }
+
     double perKmCharge = restaurant!.selfDeliverySystem == 1
         ? restaurant.perKmShippingCharge!
         : zoneData.perKmShippingCharge ?? 0;

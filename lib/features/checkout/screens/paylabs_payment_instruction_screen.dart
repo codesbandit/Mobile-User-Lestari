@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
 import 'package:lestar_user/common/widgets/custom_app_bar_widget.dart';
 import 'package:lestar_user/common/widgets/custom_snackbar_widget.dart';
 import 'package:lestar_user/features/checkout/controllers/checkout_controller.dart';
@@ -13,6 +15,8 @@ import 'package:lestar_user/helper/price_converter.dart';
 import 'package:lestar_user/helper/route_helper.dart';
 import 'package:lestar_user/util/dimensions.dart';
 import 'package:lestar_user/util/styles.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class PaylabsPaymentInstructionScreen extends StatefulWidget {
@@ -208,6 +212,54 @@ class _PaylabsPaymentInstructionScreenState
   void _copyToClipboard(String text) {
     Clipboard.setData(ClipboardData(text: text));
     showCustomSnackBar('Berhasil disalin', isError: false);
+  }
+
+  Future<void> _downloadQrImage() async {
+    final dynamic qrUrl = _instruction['qris_url'];
+    if (qrUrl == null || qrUrl.toString().isEmpty) {
+      showCustomSnackBar('QR tidak tersedia untuk diunduh.');
+      return;
+    }
+
+    try {
+      final PermissionStatus status = await Permission.storage.request();
+      if (!(status.isGranted || status.isLimited)) {
+        showCustomSnackBar('Izin penyimpanan dibutuhkan untuk mengunduh QR.');
+        return;
+      }
+
+      final http.Response response = await http.get(Uri.parse(qrUrl.toString()));
+      if (response.statusCode != 200) {
+        showCustomSnackBar('Gagal mengunduh QR.');
+        return;
+      }
+
+      final Directory directory = await _getDownloadDirectory();
+      final String filePath =
+          '${directory.path}/paylabs-qris-${widget.paymentId.replaceAll('-', '')}.png';
+      final File file = File(filePath);
+      await file.writeAsBytes(response.bodyBytes);
+      showCustomSnackBar('QR berhasil diunduh', isError: false);
+    } catch (_) {
+      showCustomSnackBar('Gagal mengunduh QR.');
+    }
+  }
+
+  Future<Directory> _getDownloadDirectory() async {
+    if (Platform.isAndroid) {
+      final Directory directory = Directory('/storage/emulated/0/Download/Lestari');
+      if (!await directory.exists()) {
+        await directory.create(recursive: true);
+      }
+      return directory;
+    }
+
+    final Directory documentsDirectory = await getApplicationDocumentsDirectory();
+    final Directory directory = Directory('${documentsDirectory.path}/Lestari');
+    if (!await directory.exists()) {
+      await directory.create(recursive: true);
+    }
+    return directory;
   }
 
   Future<void> _openDeepLink() async {
@@ -526,6 +578,17 @@ class _PaylabsPaymentInstructionScreenState
             style: robotoRegular.copyWith(fontSize: 12, color: Colors.grey),
             textAlign: TextAlign.center,
           ),
+          if (qrUrl != null && qrUrl.toString().isNotEmpty) ...[
+            const SizedBox(height: Dimensions.paddingSizeLarge),
+            OutlinedButton.icon(
+              onPressed: _downloadQrImage,
+              icon: const Icon(Icons.download_rounded),
+              label: Text(
+                'Download QR',
+                style: robotoMedium.copyWith(fontSize: 12),
+              ),
+            ),
+          ],
         ],
       ),
     );

@@ -19,6 +19,9 @@ class ZoneData {
   int? increasedDeliveryFeeStatus;
   String? increaseDeliveryFeeMessage;
   double? perKmShippingCharge;
+  String? deliveryChargeType;
+  int? weightChargeBasis;
+  double? weightShippingCharge;
   double? maxCodOrderAmount;
   double? maximumShippingCharge;
 
@@ -30,6 +33,9 @@ class ZoneData {
     this.increasedDeliveryFeeStatus,
     this.increaseDeliveryFeeMessage,
     this.perKmShippingCharge,
+    this.deliveryChargeType,
+    this.weightChargeBasis,
+    this.weightShippingCharge,
     this.maxCodOrderAmount,
     this.maximumShippingCharge,
   });
@@ -42,6 +48,11 @@ class ZoneData {
     increasedDeliveryFeeStatus = json['increased_delivery_fee_status'];
     increaseDeliveryFeeMessage = json['increase_delivery_charge_message'];
     perKmShippingCharge = json['per_km_shipping_charge']?.toDouble();
+    deliveryChargeType = json['delivery_charge_type'];
+    weightChargeBasis = json['weight_charge_basis'] != null
+        ? int.tryParse(json['weight_charge_basis'].toString())
+        : null;
+    weightShippingCharge = json['weight_shipping_charge']?.toDouble();
     maxCodOrderAmount = json['max_cod_order_amount']?.toDouble();
     maximumShippingCharge = json['maximum_shipping_charge']?.toDouble();
   }
@@ -55,6 +66,9 @@ class ZoneData {
     data['increased_delivery_fee_status'] = increasedDeliveryFeeStatus;
     data['increase_delivery_charge_message'] = increaseDeliveryFeeMessage;
     data['per_km_shipping_charge'] = perKmShippingCharge;
+    data['delivery_charge_type'] = deliveryChargeType;
+    data['weight_charge_basis'] = weightChargeBasis;
+    data['weight_shipping_charge'] = weightShippingCharge;
     data['max_cod_order_amount'] = maxCodOrderAmount;
     data['maximum_shipping_charge'] = maximumShippingCharge;
     return data;

@@ -420,6 +420,9 @@ class OrderPlaceButton extends StatelessWidget {
         'one_or_more_products_are_not_available_for_this_selected_time'.tr,
       );
       return true;
+    } else if (_hasMissingWeightForDelivery()) {
+      showCustomSnackBar(_missingWeightMessage());
+      return true;
     } else if (checkoutController.orderType != 'take_away' &&
         checkoutController.distance == -1 &&
         deliveryCharge == -1) {
@@ -433,6 +436,48 @@ class OrderPlaceButton extends StatelessWidget {
     } else {
       return false;
     }
+  }
+
+  bool _hasMissingWeightForDelivery() {
+    if (checkoutController.orderType != 'delivery') {
+      return false;
+    }
+
+    final address = AddressHelper.getAddressFromSharedPref();
+    dynamic zoneData;
+    for (final zone in address?.zoneData ?? []) {
+      if (zone.id == checkoutController.restaurant?.zoneId) {
+        zoneData = zone;
+        break;
+      }
+    }
+
+    if (zoneData?.deliveryChargeType != 'weight') {
+      return false;
+    }
+
+    for (final cart in cartList ?? <CartModel>[]) {
+      if ((cart.product?.weightGrams ?? 0) <= 0) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  String _missingWeightMessage() {
+    final List<String> missingItems = [];
+    for (final cart in cartList ?? <CartModel>[]) {
+      if ((cart.product?.weightGrams ?? 0) <= 0) {
+        missingItems.add(cart.product?.name ?? 'Produk');
+      }
+    }
+
+    if (missingItems.isEmpty) {
+      return 'Berat produk belum diatur.';
+    }
+
+    return 'Berat produk belum diatur untuk: ${missingItems.join(', ')}';
   }
 
   AddressModel? _processFinalAddress(bool isGuestLogIn) {

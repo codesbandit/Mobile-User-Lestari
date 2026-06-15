@@ -67,6 +67,7 @@ class Product {
   bool? isHalalFood;
   String? stockType;
   int? itemStock;
+  int? weightGrams;
   List<String>? nutritionsName;
   List<String>? allergiesName;
 
@@ -99,6 +100,7 @@ class Product {
     this.isHalalFood,
     this.stockType,
     this.itemStock,
+    this.weightGrams,
     this.nutritionsName,
     this.allergiesName,
   });
@@ -158,6 +160,9 @@ class Product {
     isHalalFood = json['is_halal'] == 1;
     stockType = json['stock_type'];
     itemStock = int.tryParse(json['item_stock'].toString());
+    weightGrams = json['weight_grams'] != null
+        ? int.tryParse(json['weight_grams'].toString())
+        : null;
     nutritionsName = json['nutritions_name']?.cast<String>();
     allergiesName = json['allergies_name']?.cast<String>();
   }
@@ -200,6 +205,7 @@ class Product {
     data['is_halal'] = isHalalFood;
     data['stock_type'] = stockType;
     data['item_stock'] = itemStock;
+    data['weight_grams'] = weightGrams;
     data['nutritions_name'] = nutritionsName;
     data['allergies_name'] = allergiesName;
     return data;

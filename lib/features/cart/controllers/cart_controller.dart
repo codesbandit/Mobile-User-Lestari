@@ -169,6 +169,18 @@ class CartController extends GetxController implements GetxService {
     return _subTotal;
   }
 
+  int getTotalWeightGrams([List<CartModel>? carts]) {
+    final List<CartModel> source = carts ?? _cartList;
+    int totalWeight = 0;
+
+    for (final CartModel cartModel in source) {
+      final int weight = cartModel.product?.weightGrams ?? 0;
+      totalWeight += weight * (cartModel.quantity ?? 0);
+    }
+
+    return totalWeight;
+  }
+
   Future<int?> reorderAddToCart(List<OnlineCart> cartList) async {
     await clearCartList();
     return _addMultipleCartItemOnline(cartList);
