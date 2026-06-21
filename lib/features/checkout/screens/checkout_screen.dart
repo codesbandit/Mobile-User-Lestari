@@ -354,6 +354,11 @@ class CheckoutScreenState extends State<CheckoutScreen> {
                                       : 'calculating'.tr;
                                 }
                               }
+                              final String? deliveryFeeBreakdown =
+                                  _getWeightDeliveryBreakdown(
+                                    checkoutController.restaurant,
+                                    deliveryCharge,
+                                  );
 
                               double price = _cartList != null
                                   ? _calculatePrice(_cartList)
@@ -583,6 +588,8 @@ class CheckoutScreenState extends State<CheckoutScreen> {
                                                                 initCall(),
                                                             deliveryChargeForView:
                                                                 _deliveryChargeForView,
+                                                            deliveryFeeBreakdown:
+                                                                deliveryFeeBreakdown,
                                                             deliveryFeeTooltipController:
                                                                 deliveryFeeTooltipController,
                                                             badWeatherCharge:
@@ -716,6 +723,8 @@ class CheckoutScreenState extends State<CheckoutScreen> {
                                                             initCall(),
                                                         deliveryChargeForView:
                                                             _deliveryChargeForView,
+                                                        deliveryFeeBreakdown:
+                                                            deliveryFeeBreakdown,
                                                         deliveryFeeTooltipController:
                                                             deliveryFeeTooltipController,
                                                         badWeatherCharge:
@@ -928,30 +937,21 @@ class CheckoutScreenState extends State<CheckoutScreen> {
         .firstWhere((data) => data.id == restaurant!.zoneId);
 
     if (zoneData.deliveryChargeType == 'weight') {
-      final int basisKg = zoneData.weightChargeBasis == 1000 ? 1000 : 1;
-      final double minimumCharge = zoneData.minimumShippingCharge ?? 0;
-      final double? maximumCharge = zoneData.maximumShippingCharge;
       final double weightRate = zoneData.weightShippingCharge ?? 0;
-      final int totalWeightGrams = Get.find<CartController>().getTotalWeightGrams(
-        _cartList,
-      );
+      final double extraFee = zoneData.weightExtraFee ?? 20000;
+      final double extraThresholdKg = zoneData.weightExtraThresholdKg ?? 20;
+      final int totalWeightGrams = Get.find<CartController>()
+          .getTotalWeightGrams(_cartList);
       final double totalWeightKg = totalWeightGrams / 1000;
-      final double chargeBlocks = totalWeightKg > 0
-          ? (totalWeightKg / basisKg).ceilToDouble()
+      if (totalWeightKg < 1) {
+        return -1;
+      }
+
+      final double appliedExtraFee = totalWeightKg <= extraThresholdKg
+          ? extraFee
           : 0;
-
-      double deliveryCharge = chargeBlocks * weightRate;
+      double deliveryCharge = (totalWeightKg * weightRate) + appliedExtraFee;
       double charge = deliveryCharge;
-
-      if (deliveryCharge < minimumCharge) {
-        deliveryCharge = minimumCharge;
-        charge = minimumCharge;
-      }
-
-      if (maximumCharge != null && deliveryCharge > maximumCharge) {
-        deliveryCharge = maximumCharge;
-        charge = maximumCharge;
-      }
 
       if (zoneData.increasedDeliveryFeeStatus == 1) {
         badWeatherChargeForToolTip =
@@ -959,7 +959,8 @@ class CheckoutScreenState extends State<CheckoutScreen> {
         deliveryCharge =
             deliveryCharge +
             (deliveryCharge * ((zoneData.increasedDeliveryFee ?? 0) / 100));
-        charge = charge + (charge * ((zoneData.increasedDeliveryFee ?? 0) / 100));
+        charge =
+            charge + (charge * ((zoneData.increasedDeliveryFee ?? 0) / 100));
       }
 
       if (Get.find<SplashController>().configModel!.freeDeliveryDistance !=
@@ -970,7 +971,7 @@ class CheckoutScreenState extends State<CheckoutScreen> {
         charge = 0;
       }
 
-      if (restaurant.freeDelivery == true) {
+      if (restaurant?.freeDelivery == true) {
         deliveryCharge = 0;
         charge = 0;
       }
@@ -1054,6 +1055,45 @@ class CheckoutScreenState extends State<CheckoutScreen> {
         return charge;
       }
     }
+  }
+
+  String? _getWeightDeliveryBreakdown(
+    Restaurant? restaurant,
+    double deliveryCharge,
+  ) {
+    if (restaurant == null || deliveryCharge < 0) {
+      return null;
+    }
+
+    final ZoneData zoneData = AddressHelper.getAddressFromSharedPref()!
+        .zoneData!
+        .firstWhere((data) => data.id == restaurant.zoneId);
+    if (zoneData.deliveryChargeType != 'weight') {
+      return null;
+    }
+
+    final int totalWeightGrams = Get.find<CartController>().getTotalWeightGrams(
+      _cartList,
+    );
+    final double totalWeightKg = totalWeightGrams / 1000;
+    if (totalWeightKg < 1) {
+      return null;
+    }
+
+    final double ratePerKg = zoneData.weightShippingCharge ?? 0;
+    final double extraThresholdKg = zoneData.weightExtraThresholdKg ?? 20;
+    final double extraFee = totalWeightKg <= extraThresholdKg
+        ? (zoneData.weightExtraFee ?? 20000)
+        : 0;
+
+    return 'Berat: ${_formatWeightKg(totalWeightKg)} kg\n'
+        'Tarif: ${PriceConverter.convertPrice(ratePerKg)}/kg\n'
+        'Biaya tambahan: ${PriceConverter.convertPrice(extraFee)}\n'
+        'Total: ${PriceConverter.convertPrice(deliveryCharge)}';
+  }
+
+  String _formatWeightKg(double value) {
+    return value % 1 == 0 ? value.toStringAsFixed(0) : value.toStringAsFixed(2);
   }
 
   double _calculatePrice(List<CartModel>? cartList) {

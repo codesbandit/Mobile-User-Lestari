@@ -51,6 +51,7 @@ class TopSectionWidget extends StatelessWidget {
   final JustTheController loginTooltipController;
   final Function() callBack;
   final String deliveryChargeForView;
+  final String? deliveryFeeBreakdown;
   final JustTheController deliveryFeeTooltipController;
   final double badWeatherCharge;
   final double extraChargeForToolTip;
@@ -84,6 +85,7 @@ class TopSectionWidget extends StatelessWidget {
     required this.loginTooltipController,
     required this.callBack,
     required this.deliveryChargeForView,
+    this.deliveryFeeBreakdown,
     required this.deliveryFeeTooltipController,
     required this.badWeatherCharge,
     required this.extraChargeForToolTip,
@@ -370,6 +372,39 @@ class TopSectionWidget extends StatelessWidget {
                         SizedBox(
                           height: isDesktop ? Dimensions.paddingSizeDefault : 0,
                         ),
+                        if (checkoutController.orderType == 'delivery' &&
+                            deliveryFeeBreakdown != null &&
+                            deliveryFeeBreakdown!.isNotEmpty) ...[
+                          const SizedBox(height: Dimensions.paddingSizeSmall),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(
+                              Dimensions.paddingSizeSmall,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Theme.of(
+                                context,
+                              ).primaryColor.withValues(alpha: 0.06),
+                              borderRadius: BorderRadius.circular(
+                                Dimensions.radiusSmall,
+                              ),
+                              border: Border.all(
+                                color: Theme.of(
+                                  context,
+                                ).primaryColor.withValues(alpha: 0.15),
+                              ),
+                            ),
+                            child: Text(
+                              deliveryFeeBreakdown!,
+                              style: robotoRegular.copyWith(
+                                fontSize: Dimensions.fontSizeSmall,
+                                color: Theme.of(
+                                  context,
+                                ).textTheme.bodyMedium!.color,
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   )

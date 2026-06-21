@@ -222,39 +222,55 @@ class _PaylabsPaymentInstructionScreenState
     }
 
     try {
-      final PermissionStatus status = await Permission.storage.request();
-      if (!(status.isGranted || status.isLimited)) {
-        showCustomSnackBar('Izin penyimpanan dibutuhkan untuk mengunduh QR.');
-        return;
-      }
-
-      final http.Response response = await http.get(Uri.parse(qrUrl.toString()));
+      final http.Response response = await http.get(
+        Uri.parse(qrUrl.toString()),
+      );
       if (response.statusCode != 200) {
         showCustomSnackBar('Gagal mengunduh QR.');
         return;
       }
 
-      final Directory directory = await _getDownloadDirectory();
+      final Directory directory = await _getDownloadDirectoryWithFallback();
       final String filePath =
           '${directory.path}/paylabs-qris-${widget.paymentId.replaceAll('-', '')}.png';
       final File file = File(filePath);
       await file.writeAsBytes(response.bodyBytes);
-      showCustomSnackBar('QR berhasil diunduh', isError: false);
+      showCustomSnackBar('QR berhasil disimpan: $filePath', isError: false);
     } catch (_) {
       showCustomSnackBar('Gagal mengunduh QR.');
     }
   }
 
-  Future<Directory> _getDownloadDirectory() async {
+  Future<Directory> _getDownloadDirectoryWithFallback() async {
     if (Platform.isAndroid) {
-      final Directory directory = Directory('/storage/emulated/0/Download/Lestari');
+      final PermissionStatus status = await Permission.storage.request();
+      if (status.isGranted || status.isLimited) {
+        try {
+          return await _getPublicDownloadDirectory();
+        } catch (_) {}
+      }
+    }
+
+    return _getAppDownloadDirectory();
+  }
+
+  Future<Directory> _getPublicDownloadDirectory() async {
+    if (Platform.isAndroid) {
+      final Directory directory = Directory(
+        '/storage/emulated/0/Download/Lestari',
+      );
       if (!await directory.exists()) {
         await directory.create(recursive: true);
       }
       return directory;
     }
 
-    final Directory documentsDirectory = await getApplicationDocumentsDirectory();
+    return _getAppDownloadDirectory();
+  }
+
+  Future<Directory> _getAppDownloadDirectory() async {
+    final Directory documentsDirectory =
+        await getApplicationDocumentsDirectory();
     final Directory directory = Directory('${documentsDirectory.path}/Lestari');
     if (!await directory.exists()) {
       await directory.create(recursive: true);

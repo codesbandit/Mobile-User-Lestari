@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:lestar_user/common/widgets/custom_image_widget.dart';
 import 'package:lestar_user/features/checkout/controllers/checkout_controller.dart';
 import 'package:lestar_user/features/checkout/domain/models/paylabs_payment_method_model.dart';
 import 'package:lestar_user/util/dimensions.dart';
@@ -126,36 +125,16 @@ class PaylabsPaymentMethodsWidget extends StatelessWidget {
             child: Row(
               children: [
                 if (method.logoUrl != null && method.logoUrl!.isNotEmpty)
-                  CustomImageWidget(
+                  Image.network(
+                    method.logoUrl!,
                     height: 20,
                     width: 20,
                     fit: BoxFit.contain,
-                    image: method.logoUrl!,
+                    errorBuilder: (_, __, ___) =>
+                        _logoFallback(context, method),
                   )
                 else
-                  Container(
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).disabledColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      method.displayName.substring(
-                        0,
-                        method.displayName.length > 2
-                            ? 2
-                            : method.displayName.length,
-                      ),
-                      style: robotoMedium.copyWith(
-                        fontSize: 8,
-                        color: Theme.of(context).disabledColor,
-                      ),
-                    ),
-                  ),
+                  _logoFallback(context, method),
                 const SizedBox(width: Dimensions.paddingSizeSmall),
 
                 Expanded(
@@ -211,6 +190,28 @@ class PaylabsPaymentMethodsWidget extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _logoFallback(BuildContext context, PaylabsPaymentMethodModel method) {
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        color: Theme.of(context).disabledColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        method.displayName.substring(
+          0,
+          method.displayName.length > 2 ? 2 : method.displayName.length,
+        ),
+        style: robotoMedium.copyWith(
+          fontSize: 8,
+          color: Theme.of(context).disabledColor,
         ),
       ),
     );

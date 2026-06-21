@@ -423,6 +423,9 @@ class OrderPlaceButton extends StatelessWidget {
     } else if (_hasMissingWeightForDelivery()) {
       showCustomSnackBar(_missingWeightMessage());
       return true;
+    } else if (_isBelowMinimumWeightForDelivery()) {
+      showCustomSnackBar('Berat barang minimal 1 kg.');
+      return true;
     } else if (checkoutController.orderType != 'take_away' &&
         checkoutController.distance == -1 &&
         deliveryCharge == -1) {
@@ -463,6 +466,27 @@ class OrderPlaceButton extends StatelessWidget {
     }
 
     return false;
+  }
+
+  bool _isBelowMinimumWeightForDelivery() {
+    if (checkoutController.orderType != 'delivery') {
+      return false;
+    }
+
+    final address = AddressHelper.getAddressFromSharedPref();
+    dynamic zoneData;
+    for (final zone in address?.zoneData ?? []) {
+      if (zone.id == checkoutController.restaurant?.zoneId) {
+        zoneData = zone;
+        break;
+      }
+    }
+
+    if (zoneData?.deliveryChargeType != 'weight') {
+      return false;
+    }
+
+    return Get.find<CartController>().getTotalWeightGrams(cartList) < 1000;
   }
 
   String _missingWeightMessage() {

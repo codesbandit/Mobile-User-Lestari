@@ -3,7 +3,12 @@ class ZoneResponseModel {
   final List<int> _zoneIds;
   final String? _message;
   final List<ZoneData> _zoneData;
-  ZoneResponseModel(this._isSuccess, this._message, this._zoneIds, this._zoneData);
+  ZoneResponseModel(
+    this._isSuccess,
+    this._message,
+    this._zoneIds,
+    this._zoneData,
+  );
 
   String? get message => _message;
   List<int> get zoneIds => _zoneIds;
@@ -22,6 +27,8 @@ class ZoneData {
   String? deliveryChargeType;
   int? weightChargeBasis;
   double? weightShippingCharge;
+  double? weightExtraFee;
+  double? weightExtraThresholdKg;
   double? maxCodOrderAmount;
   double? maximumShippingCharge;
 
@@ -36,6 +43,8 @@ class ZoneData {
     this.deliveryChargeType,
     this.weightChargeBasis,
     this.weightShippingCharge,
+    this.weightExtraFee,
+    this.weightExtraThresholdKg,
     this.maxCodOrderAmount,
     this.maximumShippingCharge,
   });
@@ -53,6 +62,8 @@ class ZoneData {
         ? int.tryParse(json['weight_charge_basis'].toString())
         : null;
     weightShippingCharge = json['weight_shipping_charge']?.toDouble();
+    weightExtraFee = json['weight_extra_fee']?.toDouble();
+    weightExtraThresholdKg = json['weight_extra_threshold_kg']?.toDouble();
     maxCodOrderAmount = json['max_cod_order_amount']?.toDouble();
     maximumShippingCharge = json['maximum_shipping_charge']?.toDouble();
   }
@@ -69,9 +80,10 @@ class ZoneData {
     data['delivery_charge_type'] = deliveryChargeType;
     data['weight_charge_basis'] = weightChargeBasis;
     data['weight_shipping_charge'] = weightShippingCharge;
+    data['weight_extra_fee'] = weightExtraFee;
+    data['weight_extra_threshold_kg'] = weightExtraThresholdKg;
     data['max_cod_order_amount'] = maxCodOrderAmount;
     data['maximum_shipping_charge'] = maximumShippingCharge;
     return data;
   }
 }
-
