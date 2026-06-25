@@ -124,17 +124,7 @@ class PaylabsPaymentMethodsWidget extends StatelessWidget {
             ),
             child: Row(
               children: [
-                if (method.logoUrl != null && method.logoUrl!.isNotEmpty)
-                  Image.network(
-                    method.logoUrl!,
-                    height: 20,
-                    width: 20,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) =>
-                        _logoFallback(context, method),
-                  )
-                else
-                  _logoFallback(context, method),
+                _methodLogo(context, method),
                 const SizedBox(width: Dimensions.paddingSizeSmall),
 
                 Expanded(
@@ -191,6 +181,24 @@ class PaylabsPaymentMethodsWidget extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _methodLogo(BuildContext context, PaylabsPaymentMethodModel method) {
+    final String? logoUrl = method.logoUrl;
+
+    if (logoUrl == null || logoUrl.isEmpty) {
+      return _logoFallback(context, method);
+    }
+
+    return SizedBox(
+      width: 20,
+      height: 20,
+      child: Image.network(
+        logoUrl,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => _logoFallback(context, method),
       ),
     );
   }

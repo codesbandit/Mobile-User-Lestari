@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lestar_user/features/checkout/controllers/checkout_controller.dart';
+import 'package:lestar_user/features/checkout/domain/models/paylabs_payment_method_model.dart';
 import 'package:lestar_user/features/checkout/widgets/payment_method_bottom_sheet2.dart';
 import 'package:lestar_user/features/profile/controllers/profile_controller.dart';
 import 'package:lestar_user/helper/extensions.dart';
@@ -231,18 +232,7 @@ class PaymentSection extends StatelessWidget {
                 : Row(
                     children: [
                       checkoutController.paymentMethodIndex != -1
-                          ? Image.asset(
-                              checkoutController.paymentMethodIndex == 0
-                                  ? Images.cash
-                                  : checkoutController.paymentMethodIndex == 1
-                                  ? Images.wallet
-                                  : Images.digitalPayment,
-                              width: 20,
-                              height: 20,
-                              color: Theme.of(
-                                context,
-                              ).textTheme.bodyMedium!.color,
-                            )
+                          ? _getPaymentMethodIcon(context, checkoutController)
                           : Icon(
                               Icons.wallet_outlined,
                               size: 18,
@@ -311,22 +301,87 @@ class PaymentSection extends StatelessWidget {
   String _getDigitalPaymentLabel(CheckoutController controller) {
     if (controller.digitalPaymentName == 'paylabs' &&
         controller.paylabsSelectedPaymentType != null) {
-      final methods = controller.paylabsPaymentMethods;
-      if (methods != null) {
-        final matches = methods
-            .where(
-              (method) =>
-                  method.paymentType == controller.paylabsSelectedPaymentType,
-            )
-            .toList();
-        if (matches.isNotEmpty) {
-          return matches.first.displayName;
-        }
+      final PaylabsPaymentMethodModel? method = _getSelectedPaylabsMethod(
+        controller,
+      );
+      if (method != null) {
+        return method.displayName;
       }
       return controller.paylabsSelectedPaymentType!
           .replaceAll('BALANCE', '')
           .replaceAll('VA', ' VA');
     }
     return '${'digital_payment'.tr} (${controller.digitalPaymentName?.replaceAll('_', ' ').toTitleCase() ?? ''})';
+  }
+
+  Widget _getPaymentMethodIcon(
+    BuildContext context,
+    CheckoutController controller,
+  ) {
+    final Color? iconColor = Theme.of(context).textTheme.bodyMedium!.color;
+
+    if (controller.paymentMethodIndex == 0) {
+      return Image.asset(Images.cash, width: 20, height: 20, color: iconColor);
+    }
+
+    if (controller.paymentMethodIndex == 1) {
+      return Image.asset(
+        Images.wallet,
+        width: 20,
+        height: 20,
+        color: iconColor,
+      );
+    }
+
+    final PaylabsPaymentMethodModel? paylabsMethod = _getSelectedPaylabsMethod(
+      controller,
+    );
+    final String? logoUrl = paylabsMethod?.logoUrl;
+
+    if (controller.digitalPaymentName == 'paylabs' &&
+        logoUrl != null &&
+        logoUrl.isNotEmpty) {
+      return SizedBox(
+        width: 20,
+        height: 20,
+        child: Image.network(
+          logoUrl,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => Image.asset(
+            Images.digitalPayment,
+            width: 20,
+            height: 20,
+            color: iconColor,
+          ),
+        ),
+      );
+    }
+
+    return Image.asset(
+      Images.digitalPayment,
+      width: 20,
+      height: 20,
+      color: iconColor,
+    );
+  }
+
+  PaylabsPaymentMethodModel? _getSelectedPaylabsMethod(
+    CheckoutController controller,
+  ) {
+    if (controller.digitalPaymentName != 'paylabs' ||
+        controller.paylabsSelectedPaymentType == null) {
+      return null;
+    }
+
+    final List<PaylabsPaymentMethodModel>? methods =
+        controller.paylabsPaymentMethods;
+    if (methods == null) {
+      return null;
+    }
+
+    return methods.firstWhereOrNull(
+      (PaylabsPaymentMethodModel method) =>
+          method.paymentType == controller.paylabsSelectedPaymentType,
+    );
   }
 }
