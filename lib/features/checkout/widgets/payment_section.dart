@@ -5,6 +5,7 @@ import 'package:lestar_user/features/checkout/domain/models/paylabs_payment_meth
 import 'package:lestar_user/features/checkout/widgets/payment_method_bottom_sheet2.dart';
 import 'package:lestar_user/features/profile/controllers/profile_controller.dart';
 import 'package:lestar_user/helper/extensions.dart';
+import 'package:lestar_user/helper/image_url_helper.dart';
 import 'package:lestar_user/helper/price_converter.dart';
 import 'package:lestar_user/helper/responsive_helper.dart';
 import 'package:lestar_user/util/dimensions.dart';
@@ -345,7 +346,7 @@ class PaymentSection extends StatelessWidget {
         width: 20,
         height: 20,
         child: Image.network(
-          logoUrl,
+          ImageUrlHelper.resolve(logoUrl),
           fit: BoxFit.contain,
           errorBuilder: (_, __, ___) => Image.asset(
             Images.digitalPayment,

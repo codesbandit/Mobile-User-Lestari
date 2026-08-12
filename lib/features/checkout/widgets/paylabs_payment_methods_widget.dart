@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lestar_user/features/checkout/controllers/checkout_controller.dart';
 import 'package:lestar_user/features/checkout/domain/models/paylabs_payment_method_model.dart';
+import 'package:lestar_user/helper/image_url_helper.dart';
 import 'package:lestar_user/util/dimensions.dart';
 import 'package:lestar_user/util/styles.dart';
 
@@ -196,7 +197,7 @@ class PaylabsPaymentMethodsWidget extends StatelessWidget {
       width: 20,
       height: 20,
       child: Image.network(
-        logoUrl,
+        ImageUrlHelper.resolve(logoUrl),
         fit: BoxFit.contain,
         errorBuilder: (_, __, ___) => _logoFallback(context, method),
       ),

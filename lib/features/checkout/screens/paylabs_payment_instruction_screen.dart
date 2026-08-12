@@ -11,12 +11,13 @@ import 'package:lestar_user/common/widgets/custom_snackbar_widget.dart';
 import 'package:lestar_user/features/checkout/controllers/checkout_controller.dart';
 import 'package:lestar_user/features/loyalty/controllers/loyalty_controller.dart';
 import 'package:lestar_user/features/splash/controllers/splash_controller.dart';
+import 'package:lestar_user/helper/image_url_helper.dart';
 import 'package:lestar_user/helper/price_converter.dart';
 import 'package:lestar_user/helper/route_helper.dart';
 import 'package:lestar_user/util/dimensions.dart';
 import 'package:lestar_user/util/styles.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:universal_html/html.dart' as html;
 import 'package:url_launcher/url_launcher.dart';
 
 class PaylabsPaymentInstructionScreen extends StatefulWidget {
@@ -49,6 +50,10 @@ class PaylabsPaymentInstructionScreen extends StatefulWidget {
 class _PaylabsPaymentInstructionScreenState
     extends State<PaylabsPaymentInstructionScreen>
     with WidgetsBindingObserver {
+  static const MethodChannel _gallerySaverChannel = MethodChannel(
+    'id.lestari.user/gallery_saver',
+  );
+
   Timer? _pollingTimer;
   Timer? _countdownTimer;
   Map<String, dynamic> _instruction = {};
@@ -223,49 +228,44 @@ class _PaylabsPaymentInstructionScreenState
 
     try {
       final http.Response response = await http.get(
-        Uri.parse(qrUrl.toString()),
+        Uri.parse(ImageUrlHelper.resolve(qrUrl.toString())),
       );
       if (response.statusCode != 200) {
         showCustomSnackBar('Gagal mengunduh QR.');
         return;
       }
 
-      final Directory directory = await _getDownloadDirectoryWithFallback();
-      final String filePath =
-          '${directory.path}/paylabs-qris-${widget.paymentId.replaceAll('-', '')}.png';
-      final File file = File(filePath);
+      final String fileName =
+          'paylabs-qris-${widget.paymentId.replaceAll('-', '')}.png';
+
+      if (GetPlatform.isWeb) {
+        final html.Blob blob = html.Blob([response.bodyBytes], 'image/png');
+        final String objectUrl = html.Url.createObjectUrlFromBlob(blob);
+        html.AnchorElement(href: objectUrl)
+          ..download = fileName
+          ..click();
+        html.Url.revokeObjectUrl(objectUrl);
+        showCustomSnackBar('QR berhasil diunduh.', isError: false);
+        return;
+      }
+
+      if (Platform.isAndroid) {
+        await _gallerySaverChannel.invokeMethod<String>('saveImageToGallery', {
+          'bytes': response.bodyBytes,
+          'fileName': fileName,
+          'albumName': 'Lestari',
+        });
+        showCustomSnackBar('QR tersimpan di Galeri/Lestari', isError: false);
+        return;
+      }
+
+      final Directory directory = await _getAppDownloadDirectory();
+      final File file = File('${directory.path}/$fileName');
       await file.writeAsBytes(response.bodyBytes);
-      showCustomSnackBar('QR berhasil disimpan: $filePath', isError: false);
+      showCustomSnackBar('QR berhasil disimpan.', isError: false);
     } catch (_) {
       showCustomSnackBar('Gagal mengunduh QR.');
     }
-  }
-
-  Future<Directory> _getDownloadDirectoryWithFallback() async {
-    if (Platform.isAndroid) {
-      final PermissionStatus status = await Permission.storage.request();
-      if (status.isGranted || status.isLimited) {
-        try {
-          return await _getPublicDownloadDirectory();
-        } catch (_) {}
-      }
-    }
-
-    return _getAppDownloadDirectory();
-  }
-
-  Future<Directory> _getPublicDownloadDirectory() async {
-    if (Platform.isAndroid) {
-      final Directory directory = Directory(
-        '/storage/emulated/0/Download/Lestari',
-      );
-      if (!await directory.exists()) {
-        await directory.create(recursive: true);
-      }
-      return directory;
-    }
-
-    return _getAppDownloadDirectory();
   }
 
   Future<Directory> _getAppDownloadDirectory() async {
@@ -562,7 +562,7 @@ class _PaylabsPaymentInstructionScreenState
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Image.network(
-                qrUrl,
+                ImageUrlHelper.resolve(qrUrl.toString()),
                 width: 220,
                 height: 220,
                 fit: BoxFit.contain,
