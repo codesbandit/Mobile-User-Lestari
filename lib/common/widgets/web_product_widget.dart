@@ -1,3 +1,4 @@
+import 'package:lestar_user/helper/variation_pricing.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lestar_user/common/models/product_model.dart';
@@ -153,13 +154,13 @@ class WebProductWidget extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  PriceConverter.convertPrice(product!.price, discount: discount, discountType: discountType),
+                                  '${VariationPricing.hasFullPrice(product!) ? '${'variation_starting_from'.tr} ' : ''}${PriceConverter.convertPrice(VariationPricing.startingPrice(product!), discount: discount, discountType: discountType)}',
                                   style: robotoMedium.copyWith(fontSize: Dimensions.fontSizeExtraSmall), textDirection: TextDirection.ltr,
                                 ),
                                 SizedBox(width: discount! > 0 ? Dimensions.paddingSizeExtraSmall : 0),
 
                                 discount > 0 ? Text(
-                                  PriceConverter.convertPrice(product!.price),
+                                  PriceConverter.convertPrice(VariationPricing.startingPrice(product!)),
                                   style: robotoMedium.copyWith(
                                     fontSize: Dimensions.fontSizeExtraSmall,
                                     color: Theme.of(context).disabledColor,

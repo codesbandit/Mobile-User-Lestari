@@ -1267,5 +1267,8 @@
   "sharing_your_accurate_location": "Bagikan lokasi akurat untuk hasil pencarian dan estimasi pengiriman yang tepat, memastikan pesanan terkirim dengan mudah.",
   "available_promo_for_this_order": "Promo Tersedia untuk Pesanan Ini",
   "available_coupon": "Kupon Tersedia",
-  "unavailable_coupon": "Kupon Tidak Tersedia"
+  "unavailable_coupon": "Kupon Tidak Tersedia",
+  "variation_starting_from": "Mulai",
+  "variation_review_cart": "Harga atau pilihan produk berubah. Periksa keranjang sebelum melanjutkan.",
+  "variation_choose_again": "Pilih ulang ukuran/kemasan untuk"
 }

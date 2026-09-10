@@ -1268,5 +1268,8 @@
   "sharing_your_accurate_location": "مشاركة موقعك الدقيق تعزز من دقة نتائج البحث وتقديرات التوصيل، وتضمن توصيل الطلب بسهولة.",
   "available_promo_for_this_order": "العروض المتوفرة لهذا الطلب",
   "available_coupon": "كوبون متوفر",
-  "unavailable_coupon": "الكوبون غير متوفر"
+  "unavailable_coupon": "الكوبون غير متوفر",
+  "variation_starting_from": "From",
+  "variation_review_cart": "Product prices or options changed. Review your cart before continuing.",
+  "variation_choose_again": "Choose the size/pack again for"
 }

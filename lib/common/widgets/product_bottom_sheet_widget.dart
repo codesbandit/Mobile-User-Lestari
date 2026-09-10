@@ -1,3 +1,4 @@
+import 'package:lestar_user/helper/variation_pricing.dart';
 import 'package:animated_flip_counter/animated_flip_counter.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -96,7 +97,11 @@ class _ProductBottomSheetWidgetState extends State<ProductBottomSheetWidget> {
         String? discountType = (widget.isCampaign || product!.restaurantDiscount == 0) ? product!.discountType : 'percent';
         double variationPrice = _getVariationPrice(product!, productController);
         double variationPriceWithDiscount = _getVariationPriceWithDiscount(product!, productController, discount, discountType);
-        double priceWithDiscountForView = PriceConverter.convertWithDiscount(price, discount, discountType)!;
+        final fullSelectionMissing = VariationPricing.hasFullPrice(product!) &&
+            VariationPricing.invalidFullSelection(product!, productController.selectedVariations) != null;
+        final displayPrice = fullSelectionMissing ? VariationPricing.startingPrice(product!)
+            : VariationPricing.itemPrice(product!, productController.selectedVariations);
+        double priceWithDiscountForView = PriceConverter.convertWithDiscount(displayPrice, discount, discountType)!;
         double priceWithDiscount = PriceConverter.convertWithDiscount(price, discount, discountType)!;
 
         double addonsCost = _getAddonCost(product!, productController);
@@ -104,7 +109,11 @@ class _ProductBottomSheetWidgetState extends State<ProductBottomSheetWidget> {
         List<AddOns> addOnsList = _getAddonList(product!, productController);
 
         debugPrint('===total : $addonsCost + (($variationPriceWithDiscount + $price) , $discount , $discountType ) * ${productController.quantity}');
-        double priceWithAddonsVariationWithDiscount = addonsCost + (PriceConverter.convertWithDiscount(variationPrice + price , discount, discountType)! * productController.quantity!);
+        final totalPriceForView = fullSelectionMissing
+            ? VariationPricing.startingPrice(product!) + variationPrice - VariationPricing.fullDelta(product!, productController.selectedVariations)
+            : price + variationPrice;
+        double priceWithAddonsVariationWithDiscount = addonsCost + (PriceConverter.convertWithDiscount(totalPriceForView, discount, discountType)! * productController.quantity!);
+        final totalBeforeDiscountForView = totalPriceForView * productController.quantity! + addonsCost;
         double priceWithAddonsVariation = ((price + variationPrice) * productController.quantity!) + addonsCost;
         double priceWithVariation = price + variationPrice;
         bool isAvailable = DateConverter.isAvailable(product!.availableTimeStarts, product!.availableTimeEnds);
@@ -182,8 +191,8 @@ class _ProductBottomSheetWidgetState extends State<ProductBottomSheetWidget> {
                                   const SizedBox(height: Dimensions.paddingSizeExtraSmall),
 
                                   Wrap(children: [
-                                    price > priceWithDiscountForView ? Text(
-                                      PriceConverter.convertPrice(price), textDirection: TextDirection.ltr,
+                                    displayPrice > priceWithDiscountForView ? Text(
+                                      PriceConverter.convertPrice(displayPrice), textDirection: TextDirection.ltr,
                                       style: robotoMedium.copyWith(color: Theme.of(context).disabledColor, decoration: TextDecoration.lineThrough),
                                     ) : const SizedBox(),
                                     const SizedBox(width: Dimensions.paddingSizeExtraSmall),
@@ -192,7 +201,7 @@ class _ProductBottomSheetWidgetState extends State<ProductBottomSheetWidget> {
                                         : DiscountTagWithoutImageWidget(discount: discount, discountType: discountType),
 
                                     Text(
-                                      PriceConverter.convertPrice(priceWithDiscountForView),
+                                      '${fullSelectionMissing ? '${'variation_starting_from'.tr} ' : ''}${PriceConverter.convertPrice(priceWithDiscountForView)}',
                                       textDirection: TextDirection.ltr,
                                       style: robotoMedium.copyWith(fontSize: Dimensions.fontSizeLarge),
                                     ),
@@ -456,14 +465,14 @@ class _ProductBottomSheetWidgetState extends State<ProductBottomSheetWidget> {
                                                 ),
 
                                                 (price > priceWithDiscount) && (discountType == 'percent') ? Text(
-                                                  PriceConverter.convertPrice(product!.variations![index].variationValues![i].optionPrice),
+                                                  PriceConverter.convertPrice(VariationPricing.optionPrice(product!, product!.variations![index], product!.variations![index].variationValues![i])),
                                                   maxLines: 1, overflow: TextOverflow.ellipsis, textDirection: TextDirection.ltr,
                                                   style: robotoRegular.copyWith(fontSize: Dimensions.fontSizeExtraSmall, color: Theme.of(context).disabledColor, decoration: TextDecoration.lineThrough),
                                                 ) : const SizedBox(),
                                                 SizedBox(width: price > priceWithDiscount ? Dimensions.paddingSizeExtraSmall : 0),
 
                                                 Text(
-                                                  '+${PriceConverter.convertPrice(product!.variations![index].variationValues![i].optionPrice, discount: discount, discountType: discountType, isVariation: true)}',
+                                                  '${product!.variations![index].isFullPrice ? '' : '+'}${PriceConverter.convertPrice(VariationPricing.optionPrice(product!, product!.variations![index], product!.variations![index].variationValues![i]), discount: discount, discountType: discountType, isVariation: !product!.variations![index].isFullPrice)}',
                                                   maxLines: 1, overflow: TextOverflow.ellipsis, textDirection: TextDirection.ltr,
                                                   style: productController.selectedVariations[index][i]! ? robotoMedium.copyWith(fontSize: Dimensions.fontSizeExtraSmall)
                                                       : robotoRegular.copyWith(fontSize: Dimensions.fontSizeExtraSmall, color: Theme.of(context).disabledColor),
@@ -628,8 +637,8 @@ class _ProductBottomSheetWidgetState extends State<ProductBottomSheetWidget> {
                             const SizedBox(width: Dimensions.paddingSizeExtraSmall),
 
                             Row(children: [
-                              (priceWithAddonsVariation > priceWithAddonsVariationWithDiscount) ? PriceConverter.convertAnimationPrice(
-                                priceWithAddonsVariation,
+                              (totalBeforeDiscountForView > priceWithAddonsVariationWithDiscount) ? PriceConverter.convertAnimationPrice(
+                                totalBeforeDiscountForView,
                                 textStyle: robotoMedium.copyWith(color: Theme.of(context).disabledColor, fontSize: Dimensions.fontSizeSmall, decoration: TextDecoration.lineThrough),
                               ) : const SizedBox(),
                               const SizedBox(width: Dimensions.paddingSizeExtraSmall),
@@ -753,6 +762,13 @@ class _ProductBottomSheetWidgetState extends State<ProductBottomSheetWidget> {
   }
 
   void _processVariationWarning(ProductController productController) {
+    final invalidGroup = VariationPricing.invalidFullSelection(product!, productController.selectedVariations, quantity: productController.quantity ?? 1);
+    if (invalidGroup != null) {
+      showCustomSnackBar('${'choose_a_variation_from'.tr} $invalidGroup');
+      productController.changeCanAddToCartProduct(false);
+      return;
+    }
+
     if(product!.variations != null && product!.variations!.isNotEmpty){
       for(int index=0; index<product!.variations!.length; index++) {
         if(!product!.variations![index].multiSelect! && product!.variations![index].required!

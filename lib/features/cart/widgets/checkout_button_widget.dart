@@ -170,9 +170,10 @@ class CheckoutButtonWidget extends StatelessWidget {
     );
   }
 
-  void _processToCheckoutButtonPressed(
+  Future<void> _processToCheckoutButtonPressed(
     RestaurantController restaurantController,
-  ) {
+  ) async {
+    if (!await cartController.validateCheckoutCart()) return;
     if (!cartController.cartList.first.product!.scheduleOrder! &&
         cartController.availableList.contains(false)) {
       showCustomSnackBar('one_or_more_product_unavailable'.tr);

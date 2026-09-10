@@ -1,3 +1,4 @@
+import 'package:lestar_user/helper/variation_pricing.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lestar_user/common/widgets/custom_button_widget.dart';
@@ -97,7 +98,23 @@ class OrderPlaceButton extends StatelessWidget {
           isLoading: checkoutController.isLoading,
           onPressed: checkoutController.isDistanceLoading
               ? null
-              : () {
+              : () async {
+                  if (fromCart) {
+                    final controller = Get.find<CartController>();
+                    final validCart = await controller.validateCheckoutCart(expectedCart: cartList);
+                    if (!context.mounted) return;
+                    if (!validCart) {
+                      if (!controller.isLoading) Get.offNamed(RouteHelper.getCartRoute());
+                      return;
+                    }
+                  } else {
+                    for (final cart in cartList ?? <CartModel>[]) {
+                      if (VariationPricing.invalidFullSelection(cart.product!, cart.variations, quantity: cart.quantity ?? 1) != null) {
+                        showCustomSnackBar('variation_review_cart'.tr);
+                        return;
+                      }
+                    }
+                  }
                   DateTime scheduleStartDate = _processScheduleStartDate();
                   DateTime scheduleEndDate = _processScheduleEndDate();
                   bool isAvailable = _checkAvailability(

@@ -1268,5 +1268,8 @@
   "sharing_your_accurate_location": "আপনার সঠিক অবস্থান ভাগ করলে অনুসন্ধানের ফলাফল ও ডেলিভারির হিসাব আরও নিখুঁত হয় এবং অর্ডার ডেলিভারি সহজ হয়।",
   "available_promo_for_this_order": "এই অর্ডারের জন্য প্রোমো উপলব্ধ",
   "available_coupon": "উপলব্ধ কুপন",
-  "unavailable_coupon": "কুপন উপলব্ধ নয়"
+  "unavailable_coupon": "কুপন উপলব্ধ নয়",
+  "variation_starting_from": "From",
+  "variation_review_cart": "Product prices or options changed. Review your cart before continuing.",
+  "variation_choose_again": "Choose the size/pack again for"
 }

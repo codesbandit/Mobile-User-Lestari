@@ -106,25 +106,25 @@ class PricingViewWidget extends StatelessWidget {
                             children: [
                               Text('item_price'.tr, style: robotoRegular),
                               PriceConverter.convertAnimationPrice(
-                                cartController.itemPrice,
+                                cartController.displayItemPrice,
                                 textStyle: robotoRegular,
                               ),
                             ],
                           ),
                           SizedBox(
-                            height: cartController.variationPrice > 0
+                            height: cartController.displayVariationPrice > 0
                                 ? Dimensions.paddingSizeSmall
                                 : 0,
                           ),
 
-                          cartController.variationPrice > 0
+                          cartController.displayVariationPrice > 0
                               ? Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text('variations'.tr, style: robotoRegular),
                                     Text(
-                                      '(+) ${PriceConverter.convertPrice(cartController.variationPrice)}',
+                                      '(+) ${PriceConverter.convertPrice(cartController.displayVariationPrice)}',
                                       style: robotoRegular,
                                       textDirection: TextDirection.ltr,
                                     ),

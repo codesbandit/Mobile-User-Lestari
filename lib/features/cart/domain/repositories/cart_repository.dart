@@ -101,6 +101,8 @@ class CartRepository implements CartRepositoryInterface<OnlineCart> {
       response.body.forEach(
         (cart) => onlineCartList.add(OnlineCartModel.fromJson(cart)),
       );
+    } else {
+      throw StateError('Cart refresh failed');
     }
     return onlineCartList;
   }

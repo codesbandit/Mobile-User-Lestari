@@ -770,7 +770,7 @@ class _CartScreenState extends State<CartScreen> {
                                                     style: robotoRegular,
                                                   ),
                                                   PriceConverter.convertAnimationPrice(
-                                                    cartController.itemPrice,
+                                                    cartController.displayItemPrice,
                                                     textStyle: robotoRegular,
                                                   ),
                                                 ],
@@ -778,14 +778,14 @@ class _CartScreenState extends State<CartScreen> {
                                               SizedBox(
                                                 height:
                                                     cartController
-                                                            .variationPrice >
+                                                            .displayVariationPrice >
                                                         0
                                                     ? Dimensions
                                                           .paddingSizeSmall
                                                     : 0,
                                               ),
 
-                                              cartController.variationPrice > 0
+                                              cartController.displayVariationPrice > 0
                                                   ? Row(
                                                       mainAxisAlignment:
                                                           MainAxisAlignment
@@ -796,7 +796,7 @@ class _CartScreenState extends State<CartScreen> {
                                                           style: robotoRegular,
                                                         ),
                                                         Text(
-                                                          '(+) ${PriceConverter.convertPrice(cartController.variationPrice)}',
+                                                          '(+) ${PriceConverter.convertPrice(cartController.displayVariationPrice)}',
                                                           style: robotoRegular,
                                                           textDirection:
                                                               TextDirection.ltr,

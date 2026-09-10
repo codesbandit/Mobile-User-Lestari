@@ -229,6 +229,8 @@ class CategoryIds {
 }
 
 class Variation {
+  String pricingMode;
+  bool get isFullPrice => pricingMode == 'full';
   String? name;
   bool? multiSelect;
   int? min;
@@ -236,15 +238,16 @@ class Variation {
   bool? required;
   List<VariationValue>? variationValues;
 
-  Variation({this.name, this.multiSelect, this.min, this.max, this.required, this.variationValues});
+  Variation({this.pricingMode = 'additional', this.name, this.multiSelect, this.min, this.max, this.required, this.variationValues});
 
-  Variation.fromJson(Map<String, dynamic> json) {
+  Variation.fromJson(Map<String, dynamic> json)
+      : pricingMode = json['pricing_mode'] == 'full' ? 'full' : 'additional' {
     if (json['max'] != null) {
       name = json['name'];
-      multiSelect = json['type'] == 'multi';
+      multiSelect = !isFullPrice && (json['type'] == 'multi' || json['type'] == true);
       min = multiSelect! ? int.parse(json['min'].toString()) : 0;
       max = multiSelect! ? int.parse(json['max'].toString()) : 0;
-      required = json['required'] == 'on';
+      required = isFullPrice || json['required'] == 'on' || json['required'] == true;
       if (json['values'] != null) {
         variationValues = [];
         json['values'].forEach((v) {
@@ -257,6 +260,7 @@ class Variation {
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
     data['name'] = name;
+    data['pricing_mode'] = pricingMode;
     data['type'] = multiSelect;
     data['min'] = min;
     data['max'] = max;

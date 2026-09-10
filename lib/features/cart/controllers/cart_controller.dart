@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:lestar_user/helper/variation_pricing.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:lestar_user/api/api_checker.dart';
@@ -63,6 +65,11 @@ class CartController extends GetxController implements GetxService {
 
   double _variationPrice = 0;
   double get variationPrice => _variationPrice;
+
+  double get fullPriceVariationTotal => _cartList.fold(0.0, (sum, cart) =>
+      sum + VariationPricing.fullDelta(cart.product!, cart.variations) * (cart.quantity ?? 1));
+  double get displayItemPrice => _itemPrice + fullPriceVariationTotal;
+  double get displayVariationPrice => _variationPrice - fullPriceVariationTotal;
 
   bool _needExtraPackage = true;
   bool get needExtraPackage => _needExtraPackage;
@@ -162,10 +169,11 @@ class CartController extends GetxController implements GetxService {
       if (Get.find<RestaurantController>().restaurant!.discount!.minPurchase !=
               0 &&
           Get.find<RestaurantController>().restaurant!.discount!.minPurchase! >
-              _subTotal) {
+              (_itemPrice + _variationPrice + _addOnsPrice)) {
         _itemDiscountPrice = 0;
       }
     }
+    _subTotal = (_itemPrice - _itemDiscountPrice) + _addOnsPrice + _variationPrice;
     return _subTotal;
   }
 
@@ -392,21 +400,63 @@ class CartController extends GetxController implements GetxService {
     // update();
   }
 
-  Future<void> getCartDataOnline() async {
+  static String pricingSnapshot(List<CartModel> carts) => jsonEncode(carts.map((cart) => {
+    'id': cart.id, 'quantity': cart.quantity, 'productId': cart.product?.id,
+    'price': cart.product?.price, 'discount': cart.product?.discount,
+    'discountType': cart.product?.discountType,
+    'restaurantDiscount': cart.product?.restaurantDiscount,
+    'groups': cart.product?.variations?.map((v) => v.toJson()).toList(),
+    'selected': cart.variations,
+    'addons': cart.product?.addOns?.map((a) => a.toJson()).toList(),
+    'selectedAddons': cart.addOnIds?.map((a) => a.toJson()).toList(),
+  }).toList());
+
+  Future<bool> validateCheckoutCart({List<CartModel>? expectedCart}) async {
+    if (_isLoading) return false;
+    final before = pricingSnapshot(expectedCart ?? _cartList);
     _isLoading = true;
+    update();
+    try {
+      if (!await getCartDataOnline()) {
+        showCustomSnackBar('variation_review_cart'.tr);
+        return false;
+      }
+    } catch (_) {
+      showCustomSnackBar('variation_review_cart'.tr);
+      return false;
+    }
+    if (_cartList.isEmpty || before != pricingSnapshot(_cartList)) {
+      showCustomSnackBar('variation_review_cart'.tr);
+      return false;
+    }
+    for (final cart in _cartList) {
+      final invalid = VariationPricing.invalidFullSelection(cart.product!, cart.variations, quantity: cart.quantity ?? 1);
+      if (invalid != null) {
+        showCustomSnackBar('${'variation_choose_again'.tr} ${cart.product!.name}: $invalid');
+        return false;
+      }
+    }
+    return true;
+  }
+
+  Future<bool> getCartDataOnline() async {
+    _isLoading = true;
+    try {
     List<OnlineCartModel> onlineCartList = await cartServiceInterface
         .getCartDataOnline(
           AuthHelper.isLoggedIn() ? null : AuthHelper.getGuestId(),
         );
-    _cartList = [];
-    _cartList.addAll(
-      cartServiceInterface.formatOnlineCartToLocalCart(
+    _cartList = cartServiceInterface.formatOnlineCartToLocalCart(
         onlineCartModel: onlineCartList,
-      ),
     );
     calculationCart();
-    _isLoading = false;
-    update();
+    return true;
+    } catch (_) {
+      return false;
+    } finally {
+      _isLoading = false;
+      update();
+    }
   }
 
   Future<bool> removeCartItemOnline(int cartId) async {

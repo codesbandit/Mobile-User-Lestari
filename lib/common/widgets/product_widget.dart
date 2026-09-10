@@ -1,3 +1,4 @@
+import 'package:lestar_user/helper/variation_pricing.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lestar_user/common/models/product_model.dart';
@@ -208,7 +209,7 @@ class ProductWidget extends StatelessWidget {
                       ]) : Wrap(children: [
 
                         discount! > 0 ? Text(
-                          PriceConverter.convertPrice(product!.price), textDirection: TextDirection.ltr,
+                          PriceConverter.convertPrice(VariationPricing.startingPrice(product!)), textDirection: TextDirection.ltr,
                           style: robotoMedium.copyWith(
                             fontSize: Dimensions.fontSizeSmall,
                             color: Theme.of(context).hintColor,
@@ -218,7 +219,7 @@ class ProductWidget extends StatelessWidget {
                         SizedBox(width: discount> 0 ? Dimensions.paddingSizeExtraSmall : 0),
 
                         Text(
-                          PriceConverter.convertPrice(product!.price, discount: discount, discountType: discountType),
+                          '${VariationPricing.hasFullPrice(product!) ? '${'variation_starting_from'.tr} ' : ''}${PriceConverter.convertPrice(VariationPricing.startingPrice(product!), discount: discount, discountType: discountType)}',
                           style: robotoMedium.copyWith(color: Theme.of(context).primaryColor), textDirection: TextDirection.ltr,
                         ),
                         const SizedBox(width: Dimensions.paddingSizeExtraSmall),

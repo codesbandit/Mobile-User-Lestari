@@ -1,3 +1,4 @@
+import 'package:lestar_user/helper/variation_pricing.dart';
 import 'package:animated_flip_counter/animated_flip_counter.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -256,7 +257,7 @@ class CartProductWidget extends StatelessWidget {
                                       children: [
                                         Text(
                                           PriceConverter.convertPrice(
-                                            cart.product!.price,
+                                            VariationPricing.itemPrice(cart.product!, cart.variations),
                                             discount: discount,
                                             discountType: discountType,
                                           ),
@@ -274,7 +275,7 @@ class CartProductWidget extends StatelessWidget {
                                         discount > 0
                                             ? Text(
                                                 PriceConverter.convertPrice(
-                                                  cart.product!.price,
+                                                  VariationPricing.itemPrice(cart.product!, cart.variations),
                                                 ),
                                                 textDirection:
                                                     TextDirection.ltr,

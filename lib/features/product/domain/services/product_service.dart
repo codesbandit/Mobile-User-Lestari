@@ -277,7 +277,7 @@ class ProductService implements ProductServiceInterface {
                 (variations[index].variationValues![j].stockType !=
                         'unlimited' &&
                     variations[index].variationValues![j].currentStock! > 0)) {
-              if (j == i && resultVariations[index][j]!) {
+              if (j == i && resultVariations[index][j]! && !variations[index].isFullPrice) {
                 resultVariations[index][j] = false;
               } else {
                 resultVariations[index][j] = j == i;

@@ -1,3 +1,4 @@
+import 'package:lestar_user/helper/variation_pricing.dart';
 import 'package:lestar_user/common/enums/data_source_enum.dart';
 import 'package:lestar_user/features/cart/controllers/cart_controller.dart';
 import 'package:lestar_user/features/checkout/domain/models/place_order_body_model.dart';
@@ -145,9 +146,9 @@ class ProductController extends GetxController implements GetxService {
     _collapseVariation = [];
     if (cart != null) {
       _quantity = cart.quantity;
-      _selectedVariations.addAll(cart.variations!);
+      _selectedVariations.addAll(VariationPricing.remapSelections(cart.product!, cart.variations, product!));
       _variationsStock = productServiceInterface.initializeVariationsStock(
-        product!.variations,
+        product.variations,
       );
       _addOnActiveList = productServiceInterface.initializeCartAddonActiveList(
         product,
